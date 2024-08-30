@@ -7,7 +7,7 @@ setup(
     url='https://github.com/TobiaMarcucci/pybezier',
     author='Tobia Marcucci',
     author_email='tobiam@mit.edu',
-    license='BSD 2-clause',
+    license='MIT',
     packages=['pybezier'],
     install_requires=['numpy'],
 )

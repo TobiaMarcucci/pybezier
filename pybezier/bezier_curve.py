@@ -129,7 +129,7 @@ class BezierCurve(object):
     def plot_components(self, n=51, legend=True, **kwargs):
         import matplotlib.pyplot as plt
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        repeat = np.ceil(self.dimension / len(colors)))
+        repeat = np.ceil(self.dimension / len(colors))
         colors = colors * int(repeat)
         t = np.linspace(self.a, self.b, n)
         values = self(t)
