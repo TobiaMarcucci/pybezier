@@ -1,12 +1,5 @@
 import numpy as np
-
-def binomial(n, m):
-    if m == 0:
-        return 1
-    elif m > n / 2:
-        return binomial(n, n - m)
-    else:
-        return (n / m) * binomial(n - 1, m - 1)
+from pybezier.binomial import binomial
 
 class BezierCurve(object):
 
@@ -26,11 +19,12 @@ class BezierCurve(object):
         value = c1 * c2 ** n * c3 ** (self.degree - n)
         return value
     
-    def _make_compatible_curve(self, curve):
-        if isinstance(curve, BezierCurve):
-            assert np.isclose(self.a, curve.a)
-            assert np.isclose(self.b, curve.b)
-        else:
+    def _assert_same_times(self, curve):
+        assert np.isclose(self.a, curve.a)
+        assert np.isclose(self.b, curve.b)
+
+    def _convert_to_curve(self, curve):
+        if not isinstance(curve, BezierCurve):
             points = np.array([[curve]])
             curve = BezierCurve(points, self.a, self.b)
         return curve
@@ -41,7 +35,8 @@ class BezierCurve(object):
     
     def __mul__(self, curve):
         """See (44) in 'Algorithms for polynomials in Bernstein form' by Farouky and Rajan"""
-        curve = self._make_compatible_curve(curve)
+        curve = self._convert_to_curve(curve)
+        self._assert_same_times(curve)
         degree = self.degree + curve.degree
         dimension = max(self.dimension, curve.dimension)
         points = np.zeros((degree + 1, dimension), dtype=object)
@@ -64,7 +59,8 @@ class BezierCurve(object):
         return self * curve
     
     def __add__(self, curve):
-        curve = self._make_compatible_curve(curve)
+        curve = self._convert_to_curve(curve)
+        self._assert_same_times(curve)
         if curve.degree > self.degree:
             self = self.elevate_degree(curve.degree)
         elif self.degree > curve.degree:
