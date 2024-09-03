@@ -1,5 +1,3 @@
-import numpy as np
-
 def _binomial(n : int, m: int):
     if m == 0:
         return 1
