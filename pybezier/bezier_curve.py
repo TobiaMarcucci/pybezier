@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, List, Self
+from typing import Tuple, List, Callable, Self
 from numbers import Number
 from pybezier.binomial import binomial
 
@@ -131,6 +131,10 @@ class BezierCurve(object):
                     b *= 2
                 a += b * self.points[i].dot(self.points[j])
         return self.duration * a / (2 * self.degree + 1)
+    
+    def integral_of_convex(self, f : Callable) -> float:
+        c = self.duration / (self.degree + 1)
+        return c * sum(f(point) for point in self.points)
 
     def plot_components(self, n : int = 51, legend : bool = True, **kwargs):
         import matplotlib.pyplot as plt

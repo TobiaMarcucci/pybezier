@@ -3,7 +3,7 @@ from typing import List, Self
 from numbers import Number
 from pybezier.bezier_curve import BezierCurve
 
-class CompositeBezierCurve:
+class CompositeBezierCurve(object):
 
     def __init__(self, curves):
         initial_times = [curve.initial_time for curve in curves[1:]]

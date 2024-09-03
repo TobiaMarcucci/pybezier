@@ -175,3 +175,15 @@ class TestBezierCurve(unittest.TestCase):
         values = [curve(time).dot(curve(time)) for time in times]
         integral = np.trapezoid(values, times)
         self.assertAlmostEqual(curve.l2_squared(), integral)
+
+    def test_integral_of_convex(self):
+        points = np.array([[0, 0], [0, 1], [1, 1], [1, 0]])
+        initial_time = .55
+        final_time = 3.12
+        curve = BezierCurve(points, initial_time, final_time)
+        f = lambda point: point.dot(point)
+        self.assertTrue(curve.integral_of_convex(f) >= curve.l2_squared())
+        # upper bound for curve lenght is equal to distance of control points
+        derivative = curve.derivative()
+        self.assertAlmostEqual(derivative.integral_of_convex(np.linalg.norm), 3)
+        
