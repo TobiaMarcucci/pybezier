@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, Self
+from typing import Tuple, List, Self
 from numbers import Number
 from pybezier.binomial import binomial
 
@@ -15,7 +15,13 @@ class BezierCurve(object):
         self.final_time = final_time
         self.duration = final_time - initial_time
 
-    def _berstein(self, time : float, n : int) -> float:
+    def initial_point(self) -> np.array:
+        return self.points[0]
+
+    def final_point(self) -> np.array:
+        return self.points[-1]
+
+    def _berstein(self, time : float | List[float], n : int) -> float:
         c = binomial(self.degree, n)
         t = (time - self.initial_time) / self.duration 
         value = c * t ** n * (1 - t) ** (self.degree - n)
@@ -31,7 +37,7 @@ class BezierCurve(object):
         points = np.array([[n]])
         return BezierCurve(points, self.initial_time, self.final_time)
 
-    def __call__(self, time : float) -> float:
+    def __call__(self, time : float | List[float]) -> float:
         c = np.array([self._berstein(time, n) for n in range(self.degree + 1)])
         return c.T.dot(self.points)
     
@@ -110,12 +116,6 @@ class BezierCurve(object):
         curve1 = BezierCurve(points1, self.initial_time, time)
         curve2 = BezierCurve(points2, time, self.final_time)
         return curve1, curve2
-
-    def start_point(self) -> np.array:
-        return self.points[0]
-
-    def end_point(self) -> np.array:
-        return self.points[-1]
     
     def l2_squared(self) -> float:
         """See (34) in Algorithms for polynomials in Bernstein form, by Farouky
