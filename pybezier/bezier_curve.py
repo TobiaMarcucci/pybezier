@@ -33,10 +33,6 @@ class BezierCurve(object):
         if not np.isclose(self.final_time, curve.final_time):
             raise ValueError("Incompatible curves, final times don't match.")
 
-    def _number_to_curve(self, n : Number) -> Self:
-        points = np.array([[n]])
-        return BezierCurve(points, self.initial_time, self.final_time)
-
     def __call__(self, time : float | List[float]) -> float:
         c = np.array([self._berstein(time, n) for n in range(self.degree + 1)])
         return c.T.dot(self.points)
@@ -60,6 +56,10 @@ class BezierCurve(object):
                 b *= binomial(curve.degree, i - j)
                 points[i] += self.points[j] * curve.points[i - j] * b
             points[i] /= binomial(degree, i)
+        return BezierCurve(points, self.initial_time, self.final_time)
+    
+    def _number_to_curve(self, n : Number) -> Self:
+        points = np.array([[n]])
         return BezierCurve(points, self.initial_time, self.final_time)
     
     def __rmul__(self, curve : Self | Number) -> Self:

@@ -1,5 +1,6 @@
 import numpy as np
 from typing import List, Self
+from numbers import Number
 from pybezier.bezier_curve import BezierCurve
 
 class CompositeBezierCurve:
@@ -19,6 +20,12 @@ class CompositeBezierCurve:
         self.duration = self.final_time - self.initial_time
         self.knot_times = [self.initial_time] + [curve.final_time for curve in curves]
 
+    def initial_point(self) -> np.array:
+        return self[0].initial_point()
+
+    def final_point(self) -> np.array:
+        return self[-1].final_point()
+
     def __iter__(self) -> List[BezierCurve]:
         return self.curves
 
@@ -28,15 +35,44 @@ class CompositeBezierCurve:
     def __call__(self, time : float) -> np.array:
         segment = self.find_segment(time)
         return self[segment](time)
+    
+    def find_segment(self, time : float) -> int:
+        segment = 0
+        while self[segment].final_time < time:
+            segment += 1
+        return segment
 
     def __len__(self) -> int:
         return(len(self.curves))
+    
+    def __mul__(self, composite_curve : Self | Number) -> Self:
+        if not isinstance(composite_curve, BezierCurve):
+            composite_curve = self._number_to_composite_curve(composite_curve)
+        CompositeBezierCurve([curve_1 * curve_2 for curve_1, curve_2 in zip(self, composite_curve)])
 
-    def initial_point(self) -> np.array:
-        return self[0].initial_point()
+    def _number_to_composite_curve(self, n : Number) -> Self:
+        curves = [curve._number_to_curve(n) for curve in self]
+        return CompositeBezierCurve(curves)
 
-    def final_point(self) -> np.array:
-        return self[-1].final_point()
+    def __rmul__(self, composite_curve : Self | Number) -> Self:
+        return self * composite_curve
+
+    def __add__(self, composite_curve : Self | Number) -> Self:
+        if not isinstance(composite_curve, BezierCurve):
+            composite_curve = self._number_to_composite_curve(composite_curve)
+        CompositeBezierCurve([curve_1 + curve_2 for curve_1, curve_2 in zip(self, composite_curve)])
+    
+    def __radd__(self, composite_curve : Self | Number) -> Self:
+        return self + composite_curve
+    
+    def __sub__(self, composite_curve : Self | Number) -> Self:
+        return self + composite_curve * (-1)
+    
+    def __rsub__(self, composite_curve : Self | Number) -> Self:
+        return self * (-1) + composite_curve
+    
+    def  __neg__(self) -> Self:
+        return 0 - self
 
     def knot_points(self) -> np.array:
         knots = [curve.points[0] for curve in self]
