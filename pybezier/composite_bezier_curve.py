@@ -1,5 +1,6 @@
 import numpy as np
 from typing import List, Self
+from collections.abc import Iterable
 from numbers import Number
 from pybezier.bezier_curve import BezierCurve
 
@@ -26,8 +27,8 @@ class CompositeBezierCurve(object):
     def final_point(self) -> np.array:
         return self[-1].final_point()
 
-    def __iter__(self) -> List[BezierCurve]:
-        return self.curves
+    def __iter__(self) -> Iterable[BezierCurve]:
+        return iter(self.curves)
 
     def __getitem__(self, i : int) -> BezierCurve:
         return self.curves[i]
@@ -46,9 +47,10 @@ class CompositeBezierCurve(object):
         return(len(self.curves))
     
     def __mul__(self, composite_curve : Self | Number) -> Self:
-        if not isinstance(composite_curve, BezierCurve):
+        if not isinstance(composite_curve, CompositeBezierCurve):
             composite_curve = self._number_to_composite_curve(composite_curve)
-        CompositeBezierCurve([curve_1 * curve_2 for curve_1, curve_2 in zip(self, composite_curve)])
+        curves = [curve_1 * curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
+        return CompositeBezierCurve(curves)
 
     def _number_to_composite_curve(self, n : Number) -> Self:
         curves = [curve._number_to_curve(n) for curve in self]
@@ -56,11 +58,16 @@ class CompositeBezierCurve(object):
 
     def __rmul__(self, composite_curve : Self | Number) -> Self:
         return self * composite_curve
+    
+    def elevate_degree(self, degree : int) -> Self:
+        curves = [curve.elevate_degree(degree) for curve in self]
+        return CompositeBezierCurve(curves)
 
     def __add__(self, composite_curve : Self | Number) -> Self:
-        if not isinstance(composite_curve, BezierCurve):
+        if not isinstance(composite_curve, CompositeBezierCurve):
             composite_curve = self._number_to_composite_curve(composite_curve)
-        CompositeBezierCurve([curve_1 + curve_2 for curve_1, curve_2 in zip(self, composite_curve)])
+        curves = [curve_1 + curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
+        return CompositeBezierCurve(curves)
     
     def __radd__(self, composite_curve : Self | Number) -> Self:
         return self + composite_curve
