@@ -21,6 +21,16 @@ class CompositeBezierCurve(object):
         self.duration = self.final_time - self.initial_time
         self.knot_times = [self.initial_time] + [curve.final_time for curve in curves]
 
+    def curve_segment(self, time : float) -> int:
+        segment = 0
+        while self[segment].final_time < time:
+            segment += 1
+        return segment
+
+    def __call__(self, time : float) -> np.array:
+        segment = self.curve_segment(time)
+        return self[segment](time)
+
     def initial_point(self) -> np.array:
         return self[0].initial_point()
 
@@ -32,16 +42,6 @@ class CompositeBezierCurve(object):
 
     def __getitem__(self, i : int) -> BezierCurve:
         return self.curves[i]
-
-    def __call__(self, time : float) -> np.array:
-        segment = self.find_segment(time)
-        return self[segment](time)
-    
-    def find_segment(self, time : float) -> int:
-        segment = 0
-        while self[segment].final_time < time:
-            segment += 1
-        return segment
 
     def __len__(self) -> int:
         return(len(self.curves))
@@ -82,7 +82,8 @@ class CompositeBezierCurve(object):
         return 0 - self
 
     def knot_points(self) -> np.array:
-        knots = [curve.points[0] for curve in self]
+        # assumes that the curve is continuous
+        knots = [curve.initial_point() for curve in self]
         knots.append(self.final_point())
         return np.array(knots)
 

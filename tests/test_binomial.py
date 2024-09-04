@@ -1,5 +1,4 @@
 import unittest
-
 from pybezier.binomial import binomial
 
 class TestBinomial(unittest.TestCase):
