@@ -17,3 +17,6 @@ class TestBinomial(unittest.TestCase):
         self.assertRaises(ValueError, binomial, 4.5, 2)
         self.assertRaises(ValueError, binomial, 4, 5)
         self.assertRaises(ValueError, binomial, 4, -1)
+
+if __name__ == '__main__':
+    unittest.main()
