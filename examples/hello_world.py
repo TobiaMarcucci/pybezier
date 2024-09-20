@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from pybezier import BezierCurve
 
 # generate random curve
@@ -9,7 +10,6 @@ final_time = 5
 curve = BezierCurve(points, initial_time, final_time)
 
 # plot curve with initial and final points
-import matplotlib.pyplot as plt
 plt.figure()
 curve.plot_trace_2d()
 times = [initial_time, final_time]
