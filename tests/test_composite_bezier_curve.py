@@ -120,11 +120,22 @@ class TestCompositeBezierCurve(unittest.TestCase):
             np.testing.assert_array_almost_equal(neg(time), -self.composite_curve(time))
 
     def test_derivative(self):
-        der = self.composite_curve.derivative()
-        time_step = 1e-9
+        derivative = self.composite_curve.derivative()
+        time_step = 1e-7
         for time in np.linspace(self.initial_time, self.final_time - time_step):
-            value = (self.composite_curve(time + time_step) - self.composite_curve(time)) / time_step
-            np.testing.assert_array_almost_equal(der(time), value)
+            numerical_derivative = (self.composite_curve(time + time_step) - self.composite_curve(time)) / time_step
+            np.testing.assert_array_almost_equal(derivative(time), numerical_derivative)
+
+    def test_integral(self):
+        initial_conditions = [None, np.ones(self.composite_curve.dimension)]
+        for initial_condition in initial_conditions:
+            integral = self.composite_curve.integral(initial_condition)
+            value = 0 if initial_condition is None else initial_condition
+            np.testing.assert_array_almost_equal(integral(self.initial_time), value)
+            time_step = 1e-6
+            for time in np.linspace(self.initial_time, self.final_time - time_step):
+                numerical_integral = integral(time) + time_step * self.composite_curve(time)
+                np.testing.assert_array_almost_equal(integral(time + time_step), numerical_integral)
 
     def test_knot_points(self):
         for i, point in enumerate(self.composite_curve.knot_points()):
@@ -151,6 +162,18 @@ class TestCompositeBezierCurve(unittest.TestCase):
         values = [squared_norm(time) for time in times]
         integral = np.trapezoid(values, times)
         self.assertAlmostEqual(self.composite_curve.l2_squared(), integral, places=4)
+
+    def test_integral_of_convex_function(self):
+        f = lambda point: point.dot(point)
+        value = self.composite_curve.l2_squared()
+        upper_bound = self.composite_curve.integral_of_convex_function(f)
+        self.assertTrue(value <= upper_bound)
+        # upper bound for curve lenght is equal to distance of control points
+        diff_points = np.vstack([curve.points[:-1] - curve.points[1:] for curve in self.composite_curve])
+        value = sum(np.linalg.norm(diff_points, axis=1))
+        derivative = self.composite_curve.derivative()
+        upper_bound = derivative.integral_of_convex_function(np.linalg.norm)
+        self.assertAlmostEqual(value, upper_bound)
 
 if __name__ == '__main__':
     unittest.main()

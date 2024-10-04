@@ -5,7 +5,7 @@ from pybezier.binomial import binomial
 
 class BezierCurve(object):
 
-    def __init__(self, points : np.array, initial_time : float = 0, final_time : float = 1):
+    def __init__(self, points : np.ndarray, initial_time : float = 0, final_time : float = 1):
         if initial_time >= final_time:
             raise ValueError("Initial time must be smaller than final time.")
         self.points = points
@@ -15,10 +15,10 @@ class BezierCurve(object):
         self.final_time = final_time
         self.duration = final_time - initial_time
 
-    def initial_point(self) -> np.array:
+    def initial_point(self) -> np.ndarray:
         return self.points[0]
 
-    def final_point(self) -> np.array:
+    def final_point(self) -> np.ndarray:
         return self.points[-1]
 
     def _berstein(self, time : float | List[float], n : int) -> float:
@@ -96,8 +96,16 @@ class BezierCurve(object):
     def derivative(self) -> Self:
         points = (self.points[1:] - self.points[:-1]) * (self.degree / self.duration)
         return BezierCurve(points, self.initial_time, self.final_time)
+
+    def integral(self, initial_condition : np.ndarray | None = None) -> Self:
+        points = self.points * self.duration / self.degree
+        points = np.vstack([np.zeros(self.dimension), points])
+        points = np.cumsum(points, axis=0)
+        if initial_condition is not None:
+            points += initial_condition
+        return BezierCurve(points, self.initial_time, self.final_time)
     
-    def split(self, time : float) -> Tuple[Self, Self]:
+    def domain_split(self, time : float) -> Tuple[Self, Self]:
         if time < self.initial_time:
             raise ValueError("Split time must be larger than initial time.")
         if time > self.final_time:
@@ -132,7 +140,7 @@ class BezierCurve(object):
                 a += b * self.points[i].dot(self.points[j])
         return self.duration * a / (2 * self.degree + 1)
     
-    def integral_of_convex(self, f : Callable) -> float:
+    def integral_of_convex_function(self, f : Callable) -> float:
         c = self.duration / (self.degree + 1)
         return c * sum(f(point) for point in self.points)
 

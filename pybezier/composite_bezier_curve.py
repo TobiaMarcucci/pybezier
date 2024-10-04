@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Self
+from typing import List, Callable, Self
 from collections.abc import Iterable
 from numbers import Number
 from pybezier.bezier_curve import BezierCurve
@@ -27,14 +27,14 @@ class CompositeBezierCurve(object):
             segment += 1
         return segment
 
-    def __call__(self, time : float) -> np.array:
+    def __call__(self, time : float) -> np.ndarray:
         segment = self.curve_segment(time)
         return self[segment](time)
 
-    def initial_point(self) -> np.array:
+    def initial_point(self) -> np.ndarray:
         return self[0].initial_point()
 
-    def final_point(self) -> np.array:
+    def final_point(self) -> np.ndarray:
         return self[-1].final_point()
 
     def __iter__(self) -> Iterable[BezierCurve]:
@@ -81,13 +81,13 @@ class CompositeBezierCurve(object):
     def  __neg__(self) -> Self:
         return 0 - self
 
-    def knot_points(self) -> np.array:
+    def knot_points(self) -> np.ndarray:
         # assumes that the curve is continuous
         knots = [curve.initial_point() for curve in self]
         knots.append(self.final_point())
         return np.array(knots)
 
-    def durations(self) -> np.array:
+    def durations(self) -> np.ndarray:
         return np.array([curve.duration for curve in self])
 
     def concatenate(self, composite_curve : Self) -> Self:
@@ -101,9 +101,19 @@ class CompositeBezierCurve(object):
 
     def derivative(self) -> Self:
         return CompositeBezierCurve([curve.derivative() for curve in self])
+
+    def integral(self, initial_condition : np.ndarray | None = None) -> Self:
+        curves = []
+        for curve in self:
+            curves.append(curve.integral(initial_condition))
+            initial_condition = curves[-1].final_point()
+        return CompositeBezierCurve(curves)
     
     def l2_squared(self) -> float:
         return sum(curve.l2_squared() for curve in self)
+
+    def integral_of_convex_function(self, f : Callable) -> float:
+        return sum(curve.integral_of_convex_function(f) for curve in self)
 
     def plot_components(self, n : int = 51, legend : bool = True, **kwargs):
         for i, curve in enumerate(self):

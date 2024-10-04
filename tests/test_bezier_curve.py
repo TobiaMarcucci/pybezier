@@ -109,15 +109,26 @@ class TestBezierCurve(unittest.TestCase):
             np.testing.assert_array_almost_equal(neg(time), -self.curve(time))
 
     def test_derivative(self):
-        der = self.curve.derivative()
-        time_step = 1e-9
+        derivative = self.curve.derivative()
+        time_step = 1e-6
         for time in np.linspace(self.initial_time, self.final_time - time_step):
-            value = (self.curve(time + time_step) - self.curve(time)) / time_step
-            np.testing.assert_array_almost_equal(der(time), value)
+            numerical_derivative = (self.curve(time + time_step) - self.curve(time)) / time_step
+            np.testing.assert_array_almost_equal(derivative(time), numerical_derivative)
 
-    def test_split(self):
+    def test_integral(self):
+        initial_conditions = [None, np.ones(self.curve.dimension)]
+        for initial_condition in initial_conditions:
+            integral = self.curve.integral(initial_condition)
+            value = 0 if initial_condition is None else initial_condition
+            np.testing.assert_array_almost_equal(integral(self.initial_time), value)
+            time_step = 1e-6
+            for time in np.linspace(self.initial_time, self.final_time - time_step):
+                numerical_integral = integral(time) + time_step * self.curve(time)
+                np.testing.assert_array_almost_equal(integral(time + time_step), numerical_integral)
+
+    def test_domain_split(self):
         split_time = (self.initial_time + self.final_time) / 2
-        curve_1, curve_2 = self.curve.split(split_time)
+        curve_1, curve_2 = self.curve.domain_split(split_time)
         for time in self.time_samples:
             if time < split_time:
                 np.testing.assert_array_almost_equal(self.curve(time), curve_1(time))
@@ -131,14 +142,17 @@ class TestBezierCurve(unittest.TestCase):
         integral = np.trapezoid(values, times)
         self.assertAlmostEqual(self.curve.l2_squared(), integral)
 
-    def test_integral_of_convex(self):
+    def test_integral_of_convex_function(self):
         f = lambda point: point.dot(point)
-        self.assertTrue(self.curve.integral_of_convex(f) >= self.curve.l2_squared())
+        value = self.curve.l2_squared()
+        upper_bound = self.curve.integral_of_convex_function(f)
+        self.assertTrue(value <= upper_bound)
         # upper bound for curve lenght is equal to distance of control points
+        diff_points = self.points[:-1] - self.points[1:]
+        value = sum(np.linalg.norm(diff_points, axis=1))
         derivative = self.curve.derivative()
-        value = sum(np.linalg.norm(y - x) for x, y in zip(self.points[:-1], self.points[1:]))
-
-        self.assertAlmostEqual(derivative.integral_of_convex(np.linalg.norm), value)
+        upper_bound = derivative.integral_of_convex_function(np.linalg.norm)
+        self.assertAlmostEqual(value, upper_bound)
         
 if __name__ == '__main__':
     unittest.main()
