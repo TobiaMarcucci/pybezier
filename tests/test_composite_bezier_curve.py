@@ -130,12 +130,14 @@ class TestCompositeBezierCurve(unittest.TestCase):
         initial_conditions = [None, np.ones(self.composite_curve.dimension)]
         for initial_condition in initial_conditions:
             integral = self.composite_curve.integral(initial_condition)
-            value = 0 if initial_condition is None else initial_condition
-            np.testing.assert_array_almost_equal(integral(self.initial_time), value)
-            time_step = 1e-6
+            value = integral(self.initial_time)
+            target_value = 0 if initial_condition is None else initial_condition
+            np.testing.assert_array_almost_equal(value, target_value)
+            time_step = 1e-3
             for time in np.linspace(self.initial_time, self.final_time - time_step):
-                numerical_integral = integral(time) + time_step * self.composite_curve(time)
-                np.testing.assert_array_almost_equal(integral(time + time_step), numerical_integral)
+                value = self.composite_curve(time + time_step / 2)
+                target_value = (integral(time + time_step) - integral(time)) / time_step
+                np.testing.assert_array_almost_equal(value, target_value)
 
     def test_knot_points(self):
         for i, point in enumerate(self.composite_curve.knot_points()):

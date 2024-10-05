@@ -98,7 +98,7 @@ class BezierCurve(object):
         return BezierCurve(points, self.initial_time, self.final_time)
 
     def integral(self, initial_condition : np.ndarray | None = None) -> Self:
-        points = self.points * self.duration / self.degree
+        points = self.points * self.duration / (self.degree + 1)
         points = np.vstack([np.zeros(self.dimension), points])
         points = np.cumsum(points, axis=0)
         if initial_condition is not None:
