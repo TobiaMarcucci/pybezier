@@ -1,6 +1,6 @@
 # pybezier
 
-pybezier is a simple Python libarary for manipulating Bézier curves.
+`pybezier` is a simple Python libarary for manipulating Bézier curves.
 
 ## Installation
 
