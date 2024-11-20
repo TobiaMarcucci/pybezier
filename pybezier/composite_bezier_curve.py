@@ -19,7 +19,7 @@ class CompositeBezierCurve(object):
         self.initial_time = curves[0].initial_time
         self.final_time = curves[-1].final_time
         self.duration = self.final_time - self.initial_time
-        self.knot_times = [self.initial_time] + [curve.final_time for curve in curves]
+        self.transition_times = [self.initial_time] + [curve.final_time for curve in curves]
 
     def curve_segment(self, time : float) -> int:
         segment = 0
@@ -31,11 +31,13 @@ class CompositeBezierCurve(object):
         segment = self.curve_segment(time)
         return self[segment](time)
 
+    @property
     def initial_point(self) -> np.ndarray:
-        return self[0].initial_point()
+        return self[0].initial_point
 
+    @property
     def final_point(self) -> np.ndarray:
-        return self[-1].final_point()
+        return self[-1].final_point
 
     def __iter__(self) -> Iterable[BezierCurve]:
         return iter(self.curves)
@@ -81,11 +83,11 @@ class CompositeBezierCurve(object):
     def  __neg__(self) -> Self:
         return 0 - self
 
-    def knot_points(self) -> np.ndarray:
+    def transition_points(self) -> np.ndarray:
         # assumes that the curve is continuous
-        knots = [curve.initial_point() for curve in self]
-        knots.append(self.final_point())
-        return np.array(knots)
+        points = [curve.initial_point for curve in self]
+        points.append(self.final_point)
+        return np.array(points)
 
     def durations(self) -> np.ndarray:
         return np.array([curve.duration for curve in self])
@@ -106,7 +108,7 @@ class CompositeBezierCurve(object):
         curves = []
         for curve in self:
             curves.append(curve.integral(initial_condition))
-            initial_condition = curves[-1].final_point()
+            initial_condition = curves[-1].final_point
         return CompositeBezierCurve(curves)
     
     def l2_squared(self) -> float:

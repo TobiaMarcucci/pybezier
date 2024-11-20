@@ -37,7 +37,7 @@ class TestCompositeBezierCurve(unittest.TestCase):
         self.assertEqual(self.composite_curve.initial_time, 0)
         self.assertEqual(self.composite_curve.final_time, self.n_curves)
         self.assertEqual(self.composite_curve.duration, self.n_curves)
-        self.assertEqual(self.composite_curve.knot_times, list(range(self.n_curves + 1)))
+        self.assertEqual(self.composite_curve.transition_times, list(range(self.n_curves + 1)))
 
     def test_curve_segment(self):
         for time in self.time_samples[:-1]:
@@ -53,10 +53,10 @@ class TestCompositeBezierCurve(unittest.TestCase):
 
     def test_initial_final_point(self):
         initial_value = self.composite_curve(self.initial_time)
-        initial_point = self.composite_curve.initial_point()
+        initial_point = self.composite_curve.initial_point
         np.testing.assert_array_almost_equal(initial_value, initial_point)
         final_value = self.composite_curve(self.final_time)
-        final_point = self.composite_curve.final_point()
+        final_point = self.composite_curve.final_point
         np.testing.assert_array_almost_equal(final_value, final_point)
 
     def test_iter(self):
@@ -139,8 +139,8 @@ class TestCompositeBezierCurve(unittest.TestCase):
                 target_value = (integral(time + time_step) - integral(time)) / time_step
                 np.testing.assert_array_almost_equal(value, target_value)
 
-    def test_knot_points(self):
-        for i, point in enumerate(self.composite_curve.knot_points()):
+    def test_transition_points(self):
+        for i, point in enumerate(self.composite_curve.transition_points()):
             np.testing.assert_array_almost_equal(point, self.composite_curve(i))
 
     def test_durations(self):

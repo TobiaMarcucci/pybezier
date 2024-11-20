@@ -30,8 +30,8 @@ class TestBezierCurve(unittest.TestCase):
         self.assertEqual(curve.final_time, 1)
 
     def test_initial_final_point(self):
-        np.testing.assert_array_almost_equal(self.curve(self.initial_time), self.curve.initial_point())
-        np.testing.assert_array_almost_equal(self.curve(self.final_time), self.curve.final_point())
+        np.testing.assert_array_almost_equal(self.curve(self.initial_time), self.curve.initial_point)
+        np.testing.assert_array_almost_equal(self.curve(self.final_time), self.curve.final_point)
 
     def test_berstein(self):
         for time in self.time_samples:

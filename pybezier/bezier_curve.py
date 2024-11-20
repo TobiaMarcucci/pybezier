@@ -15,9 +15,11 @@ class BezierCurve(object):
         self.final_time = final_time
         self.duration = final_time - initial_time
 
+    @property
     def initial_point(self) -> np.ndarray:
         return self.points[0]
 
+    @property
     def final_point(self) -> np.ndarray:
         return self.points[-1]
 
