@@ -116,8 +116,12 @@ class BezierCurve(object):
     def domain_split(self, time : float) -> Tuple[Self, Self]:
         if time < self.initial_time:
             raise ValueError("Split time must be larger than initial time.")
-        if time > self.final_time:
+        elif time == self.initial_time:
+            return None, self
+        elif time > self.final_time:
             raise ValueError("Split time must be smaller than final time.")
+        elif time == self.final_time:
+            return self, None
         points = self.points
         points1 = np.zeros(self.points.shape, dtype=object)
         points2 = np.zeros(self.points.shape, dtype=object)

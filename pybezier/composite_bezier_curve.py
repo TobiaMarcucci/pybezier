@@ -112,8 +112,10 @@ class CompositeBezierCurve(object):
         curves1 = self[:segment]
         curves2 = self[segment+1:]
         curve1, curve2 = self[segment].domain_split(time)
-        curves1.append(curve1)
-        curves2.insert(0, curve2)
+        if curve1 is not None:
+            curves1.append(curve1)
+        if curve2 is not None:
+            curves2.insert(0, curve2)
         return CompositeBezierCurve(curves1), CompositeBezierCurve(curves2)
 
     def time_shift(self, t : float) -> Self:
