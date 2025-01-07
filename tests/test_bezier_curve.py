@@ -129,6 +129,22 @@ class TestBezierCurve(unittest.TestCase):
                 np.testing.assert_array_almost_equal(value, target_value)
 
     def test_domain_split(self):
+
+        # split at initial time
+        curve_1, curve_2 = self.curve.domain_split(self.initial_time)
+        self.assertTrue(curve_1 is None)
+        np.testing.assert_array_equal(self.curve.points, curve_2.points)
+        self.assertEqual(self.initial_time, curve_2.initial_time)
+        self.assertEqual(self.final_time, curve_2.final_time)
+
+        # split at final time
+        curve_1, curve_2 = self.curve.domain_split(self.final_time)
+        self.assertTrue(curve_2 is None)
+        np.testing.assert_array_equal(self.curve.points, curve_1.points)
+        self.assertEqual(self.initial_time, curve_1.initial_time)
+        self.assertEqual(self.final_time, curve_1.final_time)
+
+        # split at internal time
         split_time = (self.initial_time + self.final_time) / 2
         curve_1, curve_2 = self.curve.domain_split(split_time)
         for time in self.time_samples:
@@ -136,6 +152,19 @@ class TestBezierCurve(unittest.TestCase):
                 np.testing.assert_array_almost_equal(self.curve(time), curve_1(time))
             elif time > split_time:
                 np.testing.assert_array_almost_equal(self.curve(time), curve_2(time))
+
+        # split outside domain
+        with self.assertRaises(ValueError):
+            self.assertRaises(self.curve.domain_split(self.initial_time - .1))
+        with self.assertRaises(ValueError):
+            self.assertRaises(self.curve.domain_split(self.final_time + .1))
+
+    def test_time_shift(self):
+        t = .33
+        shifted_curve = self.curve.time_shift(t)
+        np.testing.assert_array_equal(self.curve.points, shifted_curve.points)
+        self.assertEqual(self.initial_time + t, shifted_curve.initial_time)
+        self.assertEqual(self.final_time + t, shifted_curve.final_time)
 
     def test_l2_squared(self):
         n_samples = 5000

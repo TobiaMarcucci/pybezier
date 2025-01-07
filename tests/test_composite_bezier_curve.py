@@ -139,6 +139,57 @@ class TestCompositeBezierCurve(unittest.TestCase):
                 target_value = (integral(time + time_step) - integral(time)) / time_step
                 np.testing.assert_array_almost_equal(value, target_value)
 
+    def test_domain_split(self):
+
+        # split at initial time
+        composite_curve_1, composite_curve_2 = self.composite_curve.domain_split(self.initial_time)
+        self.assertTrue(composite_curve_1 is None)
+        for curve_1, curve_2 in zip(self.composite_curve, composite_curve_2):
+            np.testing.assert_array_equal(curve_1.points, curve_2.points)
+            self.assertEqual(curve_1.initial_time, curve_2.initial_time)
+            self.assertEqual(curve_1.final_time, curve_2.final_time)
+
+        # split at terminal time
+        composite_curve_1, composite_curve_2 = self.composite_curve.domain_split(self.final_time)
+        self.assertTrue(composite_curve_2 is None)
+        for curve_1, curve_2 in zip(self.composite_curve, composite_curve_1):
+            np.testing.assert_array_equal(curve_1.points, curve_2.points)
+            self.assertEqual(curve_1.initial_time, curve_2.initial_time)
+            self.assertEqual(curve_1.final_time, curve_2.final_time)
+
+        # split at transition times
+        for split_time in self.composite_curve.transition_times[1:-1]:
+            composite_curve_1, composite_curve_2 = self.composite_curve.domain_split(split_time)
+            composite_curve = composite_curve_1.concatenate(composite_curve_2)
+            for curve_1, curve_2 in zip(self.composite_curve, composite_curve):
+                np.testing.assert_array_equal(curve_1.points, curve_2.points)
+                self.assertEqual(curve_1.initial_time, curve_2.initial_time)
+                self.assertEqual(curve_1.final_time, curve_2.final_time)
+
+        # split at internal time
+        for split_time in np.linspace(self.initial_time + 1e-3, self.final_time - 1e-3):
+            composite_curve_1, composite_curve_2 = self.composite_curve.domain_split(split_time)
+            for time in self.time_samples:
+                if time < split_time:
+                    np.testing.assert_array_almost_equal(self.composite_curve(time), composite_curve_1(time))
+                elif time > split_time:
+                    np.testing.assert_array_almost_equal(self.composite_curve(time), composite_curve_2(time))
+
+        # split outside domain
+        with self.assertRaises(ValueError):
+            self.assertRaises(self.composite_curve.domain_split(self.initial_time - .1))
+        with self.assertRaises(ValueError):
+            self.assertRaises(self.composite_curve.domain_split(self.final_time + .1))
+
+    def test_time_shift(self):
+        t = .234
+        shifted_composite_curve = self.composite_curve.time_shift(t)
+        self.assertEqual(len(shifted_composite_curve), len(self.composite_curve))
+        for curve, shifted_curve in zip(self.composite_curve, shifted_composite_curve):
+            np.testing.assert_array_equal(curve.points, shifted_curve.points)
+            self.assertEqual(curve.initial_time + t, shifted_curve.initial_time)
+            self.assertEqual(curve.final_time + t, shifted_curve.final_time)
+
     def test_transition_points(self):
         for i, point in enumerate(self.composite_curve.transition_points()):
             np.testing.assert_array_almost_equal(point, self.composite_curve(i))

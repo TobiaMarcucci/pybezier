@@ -105,9 +105,13 @@ class CompositeBezierCurve(object):
 
     def domain_split(self, time : float) -> Tuple[Self, Self]:
         if time < self.initial_time:
-            raise ValueError("Split time must be larger than initial time.")
+            raise ValueError("Split time must be greater than or equal to initial time.")
+        elif time == self.initial_time:
+            return None, self
         if time > self.final_time:
-            raise ValueError("Split time must be smaller than final time.")
+            raise ValueError("Split time must be lower than or equal to final time.")
+        elif time == self.final_time:
+            return self, None
         segment = self.curve_segment(time)
         curves1 = self[:segment]
         curves2 = self[segment+1:]
