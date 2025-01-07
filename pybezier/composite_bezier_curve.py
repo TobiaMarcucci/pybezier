@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Callable, Self
+from typing import Tuple, List, Callable, Self
 from collections.abc import Iterable
 from numbers import Number
 from pybezier.bezier_curve import BezierCurve
@@ -49,13 +49,17 @@ class CompositeBezierCurve(object):
         return(len(self.curves))
     
     def __mul__(self, composite_curve : Self | Number) -> Self:
-        if not isinstance(composite_curve, CompositeBezierCurve):
+        if isinstance(composite_curve, Number):
             composite_curve = self._number_to_composite_curve(composite_curve)
         curves = [curve_1 * curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
         return CompositeBezierCurve(curves)
 
     def _number_to_composite_curve(self, n : Number) -> Self:
         curves = [curve._number_to_curve(n) for curve in self]
+        return CompositeBezierCurve(curves)
+
+    def _array_to_composite_curve(self, x : np.ndarray) -> Self:
+        curves = [curve._array_to_curve(x) for curve in self]
         return CompositeBezierCurve(curves)
 
     def __rmul__(self, composite_curve : Self | Number) -> Self:
@@ -66,8 +70,10 @@ class CompositeBezierCurve(object):
         return CompositeBezierCurve(curves)
 
     def __add__(self, composite_curve : Self | Number) -> Self:
-        if not isinstance(composite_curve, CompositeBezierCurve):
+        if isinstance(composite_curve, Number):
             composite_curve = self._number_to_composite_curve(composite_curve)
+        if isinstance(composite_curve, np.ndarray):
+            composite_curve = self._array_to_composite_curve(composite_curve)
         curves = [curve_1 + curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
         return CompositeBezierCurve(curves)
     
@@ -93,13 +99,34 @@ class CompositeBezierCurve(object):
         return np.array([curve.duration for curve in self])
 
     def concatenate(self, composite_curve : Self) -> Self:
-        shifted_curves = []
-        for curve in composite_curve:
-            initial_time = curve.initial_time + self.duration
-            final_time = curve.final_time + self.duration
-            shifted_curve = BezierCurve(curve.points, initial_time, final_time)
-            shifted_curves.append(shifted_curve)
+        t = self.final_time - composite_curve.initial_time
+        shifted_curves = composite_curve.time_shift(t).curves
         return CompositeBezierCurve(self.curves + shifted_curves)
+
+    def domain_split(self, time : float) -> Tuple[Self, Self]:
+        if time < self.initial_time:
+            raise ValueError("Split time must be greater than or equal to initial time.")
+        elif time == self.initial_time:
+            return None, self
+        if time > self.final_time:
+            raise ValueError("Split time must be lower than or equal to final time.")
+        elif time == self.final_time:
+            return self, None
+        segment = self.curve_segment(time)
+        curves1 = self[:segment]
+        curves2 = self[segment+1:]
+        curve1, curve2 = self[segment].domain_split(time)
+        if curve1 is not None:
+            curves1.append(curve1)
+        if curve2 is not None:
+            curves2.insert(0, curve2)
+        return CompositeBezierCurve(curves1), CompositeBezierCurve(curves2)
+
+    def time_shift(self, t : float) -> Self:
+        curves = []
+        for curve in self:
+            curves.append(curve.time_shift(t))
+        return CompositeBezierCurve(curves)
 
     def derivative(self) -> Self:
         return CompositeBezierCurve([curve.derivative() for curve in self])

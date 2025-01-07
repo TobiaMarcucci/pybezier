@@ -42,7 +42,7 @@ class BezierCurve(object):
     def __mul__(self, curve : Self | Number) -> Self:
         """See (44) in Algorithms for polynomials in Bernstein form, by Farouky
         and Rajan"""
-        if not isinstance(curve, BezierCurve):
+        if isinstance(curve, Number):
             curve = self._number_to_curve(curve)
         self._assert_same_times(curve)
         degree = self.degree + curve.degree
@@ -63,6 +63,10 @@ class BezierCurve(object):
     def _number_to_curve(self, n : Number) -> Self:
         points = np.array([[n]])
         return BezierCurve(points, self.initial_time, self.final_time)
+
+    def _array_to_curve(self, x : np.ndarray) -> Self:
+        points = np.array([x])
+        return BezierCurve(points, self.initial_time, self.final_time)
     
     def __rmul__(self, curve : Self | Number) -> Self:
         return self * curve
@@ -73,8 +77,10 @@ class BezierCurve(object):
         return self * curve
     
     def __add__(self, curve : Self | Number) -> Self:
-        if not isinstance(curve, BezierCurve):
+        if isinstance(curve, Number):
             curve = self._number_to_curve(curve)
+        if isinstance(curve, np.ndarray):
+            curve = self._array_to_curve(curve)
         self._assert_same_times(curve)
         if curve.degree > self.degree:
             self = self.elevate_degree(curve.degree)
@@ -109,9 +115,13 @@ class BezierCurve(object):
     
     def domain_split(self, time : float) -> Tuple[Self, Self]:
         if time < self.initial_time:
-            raise ValueError("Split time must be larger than initial time.")
-        if time > self.final_time:
-            raise ValueError("Split time must be smaller than final time.")
+            raise ValueError("Split time must be greater than or equal to initial time.")
+        elif time == self.initial_time:
+            return None, self
+        elif time > self.final_time:
+            raise ValueError("Split time must be lower than or equal to final time.")
+        elif time == self.final_time:
+            return self, None
         points = self.points
         points1 = np.zeros(self.points.shape, dtype=object)
         points2 = np.zeros(self.points.shape, dtype=object)
@@ -126,6 +136,11 @@ class BezierCurve(object):
         curve1 = BezierCurve(points1, self.initial_time, time)
         curve2 = BezierCurve(points2, time, self.final_time)
         return curve1, curve2
+
+    def time_shift(self, t : float) -> Self:
+        initial_time = self.initial_time + t
+        final_time = self.final_time + t
+        return BezierCurve(self.points, initial_time, final_time)
     
     def l2_squared(self) -> float:
         """See (34) in Algorithms for polynomials in Bernstein form, by Farouky
