@@ -123,8 +123,8 @@ class BezierCurve(object):
         elif time == self.final_time:
             return self, None
         points = self.points
-        points1 = np.zeros(self.points.shape, dtype=object)
-        points2 = np.zeros(self.points.shape, dtype=object)
+        points1 = np.zeros(self.points.shape, dtype=self.points.dtype)
+        points2 = np.zeros(self.points.shape, dtype=self.points.dtype)
         c = (time - self.initial_time) / self.duration
         d = (self.final_time - time) / self.duration
         for i in range(self.degree):
