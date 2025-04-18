@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, List, Callable, Self
+from typing import Tuple, List, Callable, Union
 from numbers import Number
 from pybezier.binomial import binomial
 
@@ -23,23 +23,23 @@ class BezierCurve(object):
     def final_point(self) -> np.ndarray:
         return self.points[-1]
 
-    def _berstein(self, time : float | List[float], n : int) -> float:
+    def _berstein(self, time : Union[float, List[float]], n : int) -> float:
         c = binomial(self.degree, n)
         t = (time - self.initial_time) / self.duration 
         value = c * t ** n * (1 - t) ** (self.degree - n)
         return value
     
-    def _assert_same_times(self, curve : Self):
+    def _assert_same_times(self, curve : "BezierCurve"):
         if not np.isclose(self.initial_time, curve.initial_time):
             raise ValueError("Incompatible curves, initial times don't match.")
         if not np.isclose(self.final_time, curve.final_time):
             raise ValueError("Incompatible curves, final times don't match.")
 
-    def __call__(self, time : float | List[float]) -> float:
+    def __call__(self, time : Union[float, List[float]]) -> float:
         c = np.array([self._berstein(time, n) for n in range(self.degree + 1)])
         return c.T.dot(self.points)
     
-    def __mul__(self, curve : Self | Number) -> Self:
+    def __mul__(self, curve : Union["BezierCurve", Number]) -> "BezierCurve":
         """See (44) in Algorithms for polynomials in Bernstein form, by Farouky
         and Rajan"""
         if isinstance(curve, Number):
@@ -60,23 +60,23 @@ class BezierCurve(object):
             points[i] /= binomial(degree, i)
         return BezierCurve(points, self.initial_time, self.final_time)
     
-    def _number_to_curve(self, n : Number) -> Self:
+    def _number_to_curve(self, n : Number) -> "BezierCurve":
         points = np.array([[n]])
         return BezierCurve(points, self.initial_time, self.final_time)
 
-    def _array_to_curve(self, x : np.ndarray) -> Self:
+    def _array_to_curve(self, x : np.ndarray) -> "BezierCurve":
         points = np.array([x])
         return BezierCurve(points, self.initial_time, self.final_time)
     
-    def __rmul__(self, curve : Self | Number) -> Self:
+    def __rmul__(self, curve : Union["BezierCurve", Number]) -> "BezierCurve":
         return self * curve
 
-    def elevate_degree(self, degree : int) -> Self:
+    def elevate_degree(self, degree : int) -> "BezierCurve":
         points = np.ones((degree - self.degree + 1, 1))
         curve = BezierCurve(points, self.initial_time, self.final_time)
         return self * curve
     
-    def __add__(self, curve : Self | Number) -> Self:
+    def __add__(self, curve : Union["BezierCurve", Number]) -> "BezierCurve":
         if isinstance(curve, Number):
             curve = self._number_to_curve(curve)
         if isinstance(curve, np.ndarray):
@@ -89,23 +89,23 @@ class BezierCurve(object):
         points = self.points + curve.points
         return BezierCurve(points, self.initial_time, self.final_time)
     
-    def __radd__(self, curve : Self | Number) -> Self:
+    def __radd__(self, curve : Union["BezierCurve", Number]) -> "BezierCurve":
         return self + curve
     
-    def __sub__(self, curve : Self | Number) -> Self:
+    def __sub__(self, curve : Union["BezierCurve", Number]) -> "BezierCurve":
         return self + curve * (-1)
     
-    def __rsub__(self, curve : Self | Number) -> Self:
+    def __rsub__(self, curve : Union["BezierCurve", Number]) -> "BezierCurve":
         return self * (-1) + curve
     
-    def  __neg__(self) -> Self:
+    def  __neg__(self) -> "BezierCurve":
         return 0 - self
     
-    def derivative(self) -> Self:
+    def derivative(self) -> "BezierCurve":
         points = (self.points[1:] - self.points[:-1]) * (self.degree / self.duration)
         return BezierCurve(points, self.initial_time, self.final_time)
 
-    def integral(self, initial_condition : np.ndarray | None = None) -> Self:
+    def integral(self, initial_condition : np.ndarray | None = None) -> "BezierCurve":
         points = self.points * self.duration / (self.degree + 1)
         points = np.vstack([np.zeros(self.dimension), points])
         points = np.cumsum(points, axis=0)
@@ -113,7 +113,7 @@ class BezierCurve(object):
             points += initial_condition
         return BezierCurve(points, self.initial_time, self.final_time)
     
-    def domain_split(self, time : float) -> Tuple[Self, Self]:
+    def domain_split(self, time : float) -> Tuple["BezierCurve", "BezierCurve"]:
         if time < self.initial_time:
             raise ValueError("Split time must be greater than or equal to initial time.")
         elif time == self.initial_time:
@@ -137,7 +137,7 @@ class BezierCurve(object):
         curve2 = BezierCurve(points2, time, self.final_time)
         return curve1, curve2
 
-    def time_shift(self, t : float) -> Self:
+    def time_shift(self, t : float) -> "BezierCurve":
         initial_time = self.initial_time + t
         final_time = self.final_time + t
         return BezierCurve(self.points, initial_time, final_time)
