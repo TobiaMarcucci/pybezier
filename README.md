@@ -10,7 +10,7 @@ pip install pybezier
 
 ## Dependencies
 
-* Python >= 3.12
+* Python >= 3.10
 * [NumPy](https://pypi.org/project/numpy/)
 
 ## Usage
