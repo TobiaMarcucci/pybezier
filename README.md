@@ -20,4 +20,4 @@ See the [examples](https://github.com/TobiaMarcucci/pybezier/tree/main/examples)
 
 ## License
 
-pybezier carries an MIT License.
+`pybezier` carries an MIT License.
