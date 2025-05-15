@@ -213,7 +213,7 @@ class TestCompositeBezierCurve(unittest.TestCase):
         times = np.linspace(self.initial_time, self.final_time, n_samples)
         squared_norm = lambda time: np.linalg.norm(self.composite_curve(time)) ** 2
         values = [squared_norm(time) for time in times]
-        integral = np.trapezoid(values, times)
+        integral = np.trapz(values, times)
         self.assertAlmostEqual(self.composite_curve.l2_squared(), integral, places=4)
 
     def test_integral_of_convex_function(self):

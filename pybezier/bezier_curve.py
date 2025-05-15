@@ -47,9 +47,9 @@ class BezierCurve(object):
         self._assert_same_times(curve)
         degree = self.degree + curve.degree
         dimension = max(self.dimension, curve.dimension)
-        # dtype object is needed to handle curves whose control points
-        # are variables in an optimization problem
-        points = np.zeros((degree + 1, dimension), dtype=object)
+        # let numpy pick the correct dtype
+        dtype = (self.points[0] * curve.points[0]).dtype
+        points = np.zeros((degree + 1, dimension), dtype=dtype)
         for i in range(degree + 1):
             j_min = max(0, i - curve.degree)
             j_max = min(self.degree, i)

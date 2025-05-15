@@ -170,7 +170,7 @@ class TestBezierCurve(unittest.TestCase):
         n_samples = 5000
         times = np.linspace(self.initial_time, self.final_time, n_samples)
         values = [self.curve(time).dot(self.curve(time)) for time in times]
-        integral = np.trapezoid(values, times)
+        integral = np.trapz(values, times)
         self.assertAlmostEqual(self.curve.l2_squared(), integral)
 
     def test_integral_of_convex_function(self):
