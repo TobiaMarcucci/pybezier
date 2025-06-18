@@ -60,6 +60,26 @@ class BezierCurve(object):
             points[i] /= binomial(degree, i)
         return BezierCurve(points, self.initial_time, self.final_time)
     
+    def __matmul__(self, curve: "BezierCurve") -> "BezierCurve":
+        """Scalar product of two Bezier curves using the @ operator.
+        
+        Computes the scalar product by multiplying the curves pointwise
+        and then summing across dimensions to produce a scalar-valued curve.
+        """
+        if not isinstance(curve, BezierCurve):
+            raise TypeError("Scalar product is only defined between BezierCurve objects")
+        
+        # Multiply the curves pointwise
+        product_curve = self * curve
+        
+        # Sum across dimensions (axis=1) to get scalar values
+        points = np.sum(product_curve.points, axis=1)
+        
+        # Reshape to maintain the (n_points, 1) structure for scalar curve
+        points = points.reshape((points.size, 1))
+        
+        return BezierCurve(points, self.initial_time, self.final_time)
+    
     def _number_to_curve(self, n : Number) -> "BezierCurve":
         points = np.array([[n]])
         return BezierCurve(points, self.initial_time, self.final_time)
