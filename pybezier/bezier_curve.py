@@ -7,8 +7,6 @@ from pybezier.binomial import binomial
 class BezierCurve(object):
 
     def __init__(self, points : np.ndarray, initial_time : float = 0, final_time : float = 1):
-        if len(points.shape) < 2:
-            raise ValueError("Array of control points must be at least two dimensional.")
         if initial_time >= final_time:
             raise ValueError("Initial time must be smaller than final time.")
         self.points = points
@@ -45,7 +43,7 @@ class BezierCurve(object):
         value = c * t ** n * (1 - t) ** (self.degree - n)
         return value
     
-    def _assert_same_times(self, curve : "BezierCurve"):
+    def _check_same_times(self, curve : "BezierCurve"):
         if not np.isclose(self.initial_time, curve.initial_time):
             raise ValueError("Incompatible curves, initial times do not match.")
         if not np.isclose(self.final_time, curve.final_time):
@@ -55,16 +53,16 @@ class BezierCurve(object):
         c = np.array([self._berstein(time, n) for n in range(self.degree + 1)])
         return (self.points.T @ c).T
 
-    def _multiplication(self, curve : Union["BezierCurve", Number], mul_op : Callable) -> "BezierCurve":
+    def _multiplication(self, curve : Union["BezierCurve", Number], mul_fun : Callable) -> "BezierCurve":
         """See (44) in Algorithms for polynomials in Bernstein form, by Farouky
         and Rajan"""
         if isinstance(curve, Number) or isinstance(curve, np.ndarray):
             points = self.points * curve
         else:
-            self._assert_same_times(curve)
+            self._check_same_times(curve)
             degree = self.degree + curve.degree
             # select shape and dtype automatically
-            example_product = mul_op(self.points[0], curve.points[0])
+            example_product = mul_fun(self.points[0], curve.points[0])
             shape = example_product.shape
             dtype = example_product.dtype
             points = np.zeros((degree + 1, *shape), dtype=dtype)
@@ -74,7 +72,7 @@ class BezierCurve(object):
                 for j in range(j_min, j_max + 1):
                     b = binomial(self.degree, j)
                     b *= binomial(curve.degree, i - j)
-                    points[i] += mul_op(self.points[j], curve.points[i - j]) * b
+                    points[i] += mul_fun(self.points[j], curve.points[i - j]) * b
                 points[i] /= binomial(degree, i)
         return BezierCurve(points, self.initial_time, self.final_time)
 
@@ -98,7 +96,7 @@ class BezierCurve(object):
         if isinstance(curve, Number) or isinstance(curve, np.ndarray):
             points = self.points + curve
         else:
-            self._assert_same_times(curve)
+            self._check_same_times(curve)
             if curve.degree > self.degree:
                 self = self.elevate_degree(curve.degree)
             elif self.degree > curve.degree:

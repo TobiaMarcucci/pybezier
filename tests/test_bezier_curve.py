@@ -14,36 +14,54 @@ class TestBezierCurve(unittest.TestCase):
         self.points_2 = np.random.rand(7, 3)
         self.curve_2 = BezierCurve(self.points_2, self.initial_time, self.final_time)
         self.time_samples = np.linspace(self.initial_time, self.final_time)
+        self.mat_points = np.random.rand(7, 5, 3)
+        self.mat_curve = BezierCurve(self.mat_points, self.initial_time, self.final_time)
 
     def test_init(self):
         np.testing.assert_equal(self.curve.points, self.points)
         self.assertEqual(self.curve.initial_time, self.initial_time)
         self.assertEqual(self.curve.final_time, self.final_time)
-        self.assertEqual(self.curve.duration, self.final_time - self.initial_time)
-        self.assertEqual(self.curve.degree, len(self.points) - 1)
-        self.assertEqual(self.curve.shape, self.points[0].shape)
         self.assertRaises(ValueError, BezierCurve, self.points, self.final_time, self.initial_time)
 
-    def test_init_deafult(self):
+    def test_deafult_init(self):
         curve = BezierCurve(self.points)
         self.assertEqual(curve.initial_time, 0)
         self.assertEqual(curve.final_time, 1)
 
-    def test_initial_final_point(self):
-        np.testing.assert_array_almost_equal(self.curve(self.initial_time), self.curve.initial_point)
-        np.testing.assert_array_almost_equal(self.curve(self.final_time), self.curve.final_point)
+    def test_degree(self):
+        self.assertEqual(self.curve.degree, len(self.points) - 1)
+        self.assertEqual(self.mat_curve.degree, len(self.mat_points) - 1)
+
+    def test_shape(self):
+        self.assertEqual(self.curve.shape, self.points[0].shape)
+        self.assertEqual(self.mat_curve.shape, self.mat_points[0].shape)
+
+    def test_size(self):
+        self.assertEqual(self.curve.size, self.points[0].size)
+        self.assertEqual(self.mat_curve.size, np.prod(self.mat_points[0].shape))
+
+    def test_duration(self):
+        self.assertEqual(self.curve.duration, self.final_time - self.initial_time)
+
+    def test_initial_point(self):
+        np.testing.assert_array_almost_equal(self.curve.initial_point, self.curve(self.initial_time))
+        np.testing.assert_array_almost_equal(self.mat_curve.initial_point, self.mat_curve(self.initial_time))
+
+    def test_final_point(self):
+        np.testing.assert_array_almost_equal(self.curve.final_point, self.curve(self.final_time))
+        np.testing.assert_array_almost_equal(self.mat_curve.final_point, self.mat_curve(self.final_time))
 
     def test_berstein(self):
         for time in self.time_samples:
             values = [self.curve._berstein(time, n) for n in range(self.curve.degree + 1)]
-            # tests partition of unity
+            # partition of unity
             self.assertTrue(min(values) >= 0)
             self.assertAlmostEqual(sum(values), 1)
 
-    def test_assert_same_times(self):
-        self.curve_1._assert_same_times(self.curve_2)
+    def test_check_same_times(self):
+        self.curve_1._check_same_times(self.curve_2)
         curve_3 = BezierCurve(self.points)
-        self.assertRaises(ValueError, self.curve_1._assert_same_times, curve_3)
+        self.assertRaises(ValueError, self.curve_1._check_same_times, curve_3)
 
     def test_call(self):
         points = np.array([[0, 0], [0, 1], [1, 1], [1, 0]])
@@ -52,14 +70,25 @@ class TestBezierCurve(unittest.TestCase):
         curve = BezierCurve(points, initial_time, final_time)
         p1 = curve(1)
         p2 = curve(2)
-        # tests convex-hull property
+        # convex-hull property
         np.testing.assert_array_less(p1, points[2])
         np.testing.assert_array_less(p2, points[2])
         np.testing.assert_array_less(points[0], p1)
         np.testing.assert_array_less(points[0], p2)
-        # tests symmetry
+        # symmetry
         self.assertAlmostEqual(p1[0], 1 - p2[0])
         self.assertAlmostEqual(p1[1], p2[1])
+
+    def test_mat_call(self):
+        c = 3.7
+        mat_points = np.array([self.points, c * np.ones(self.points.shape)])
+        mat_points = mat_points.swapaxes(0, 1)
+        mat_curve = BezierCurve(mat_points, self.initial_time, self.final_time)
+        second_row = c * np.ones(self.curve.shape)
+        for time in self.time_samples:
+            value = mat_curve(time)
+            np.testing.assert_array_almost_equal(self.curve(time), value[0])
+            np.testing.assert_array_almost_equal(second_row, value[1])
 
     def test_scalar_mul(self):
         c = 3.66
@@ -69,11 +98,33 @@ class TestBezierCurve(unittest.TestCase):
             value = self.curve(time) * c
             np.testing.assert_array_almost_equal(prod_1(time), value)
             np.testing.assert_array_almost_equal(prod_2(time), value)
+        prod_1 = self.mat_curve * c
+        prod_2 = c * self.mat_curve
+        for time in self.time_samples:
+            value = self.mat_curve(time) * c
+            np.testing.assert_array_almost_equal(prod_1(time), value)
+            np.testing.assert_array_almost_equal(prod_2(time), value)
         
     def test_elementwise_mul(self):
         prod = self.curve_1 * self.curve_2
         for time in self.time_samples:
             np.testing.assert_array_almost_equal(prod(time), self.curve_1(time) * self.curve_2(time))
+        prod = self.mat_curve * self.mat_curve
+        for time in self.time_samples:
+            np.testing.assert_array_almost_equal(prod(time), self.mat_curve(time) * self.mat_curve(time))
+
+    def test_imul(self):
+        c = 3.66
+        curve = BezierCurve(self.points)
+        curve *= c
+        for point_1, point_2 in zip(curve.points, self.points):
+            np.testing.assert_array_almost_equal(point_1, point_2 * c)
+
+    def test_matmul(self):
+        curve = self.curve @ self.curve
+        elementwise_curve = self.curve * self.curve
+        for point_1, point_2 in zip(curve.points, elementwise_curve.points):
+            np.testing.assert_array_almost_equal(point_1, sum(point_2))
 
     def test_elevate_degree(self):
         curve = self.curve.elevate_degree(11)
