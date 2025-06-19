@@ -20,8 +20,8 @@ class TestBezierCurve(unittest.TestCase):
         self.assertEqual(self.curve.initial_time, self.initial_time)
         self.assertEqual(self.curve.final_time, self.final_time)
         self.assertEqual(self.curve.duration, self.final_time - self.initial_time)
-        self.assertEqual(self.curve.degree, self.points.shape[0] - 1)
-        self.assertEqual(self.curve.dimension, self.points.shape[1])
+        self.assertEqual(self.curve.degree, len(self.points) - 1)
+        self.assertEqual(self.curve.shape, self.points[0].shape)
         self.assertRaises(ValueError, BezierCurve, self.points, self.final_time, self.initial_time)
 
     def test_init_deafult(self):
@@ -116,7 +116,7 @@ class TestBezierCurve(unittest.TestCase):
             np.testing.assert_array_almost_equal(derivative(time), numerical_derivative)
 
     def test_integral(self):
-        initial_conditions = [None, np.ones(self.curve.dimension)]
+        initial_conditions = [None, np.ones(self.curve.shape)]
         for initial_condition in initial_conditions:
             integral = self.curve.integral(initial_condition)
             value = integral(self.initial_time)

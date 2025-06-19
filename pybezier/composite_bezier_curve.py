@@ -11,11 +11,11 @@ class CompositeBezierCurve(object):
         final_times = [curve.final_time for curve in curves[:-1]]
         if not np.allclose(initial_times, final_times):
             raise ValueError("Initial and final times don't match.")
-        dimensions = [curve.dimension for curve in curves]
-        if len(set(dimensions)) != 1:
-            raise ValueError("All the curves must have the same dimension.")
+        shapes = [curve.shape for curve in curves]
+        if len(set(shapes)) != 1:
+            raise ValueError("All the curves must have the same shape.")
         self.curves = curves
-        self.dimension = curves[0].dimension
+        self.shape = curves[0].shape
         self.initial_time = curves[0].initial_time
         self.final_time = curves[-1].final_time
         self.duration = self.final_time - self.initial_time

@@ -6,8 +6,8 @@ from pybezier.composite_bezier_curve import CompositeBezierCurve
 class TestCompositeBezierCurve(unittest.TestCase):
 
     @staticmethod
-    def random_composite_curve(dimension, n_curves, n_points):
-        points = np.random.rand((n_points - 1) * n_curves + 1, dimension)
+    def random_composite_curve(shape, n_curves, n_points):
+        points = np.random.rand((n_points - 1) * n_curves + 1, *shape)
         curves = []
         for i in range(n_curves):
             start = n_points * i - i
@@ -19,21 +19,22 @@ class TestCompositeBezierCurve(unittest.TestCase):
 
     def setUp(self):
         np.random.seed(0)
-        self.dimension = 3
+        self.shape = (3,)
         self.n_curves = 4
         self.n_points = 5
-        self.composite_curve = self.random_composite_curve(self.dimension, self.n_curves, self.n_points)
+        self.composite_curve = self.random_composite_curve(self.shape, self.n_curves, self.n_points)
         self.initial_time = 0
         self.final_time = self.n_curves
         self.time_samples = np.linspace(self.initial_time, self.final_time)
         self.composite_curve_1 = self.composite_curve
-        self.composite_curve_2 = self.random_composite_curve(self.dimension, self.n_curves, self.n_points)
+        self.composite_curve_2 = self.random_composite_curve(self.shape, self.n_curves, self.n_points)
 
     def test_init(self):
         self.assertEqual(len(self.composite_curve.curves), self.n_curves)
         for curve in self.composite_curve.curves:
-            self.assertEqual(curve.points.shape, (self.n_points, self.dimension))
-        self.assertEqual(self.composite_curve.dimension, self.dimension)
+            self.assertEqual(len(curve.points), self.n_points)
+            self.assertEqual(curve.points[0].shape, self.shape)
+        self.assertEqual(self.composite_curve.shape, self.shape)
         self.assertEqual(self.composite_curve.initial_time, 0)
         self.assertEqual(self.composite_curve.final_time, self.n_curves)
         self.assertEqual(self.composite_curve.duration, self.n_curves)
@@ -127,7 +128,7 @@ class TestCompositeBezierCurve(unittest.TestCase):
             np.testing.assert_array_almost_equal(derivative(time), numerical_derivative)
 
     def test_integral(self):
-        initial_conditions = [None, np.ones(self.composite_curve.dimension)]
+        initial_conditions = [None, np.ones(self.composite_curve.shape)]
         for initial_condition in initial_conditions:
             integral = self.composite_curve.integral(initial_condition)
             value = integral(self.initial_time)
