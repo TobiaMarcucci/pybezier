@@ -192,11 +192,11 @@ class TestCompositeBezierCurve(unittest.TestCase):
             self.assertEqual(curve.final_time + t, shifted_curve.final_time)
 
     def test_transition_points(self):
-        for i, point in enumerate(self.composite_curve.transition_points()):
+        for i, point in enumerate(self.composite_curve.transition_points):
             np.testing.assert_array_almost_equal(point, self.composite_curve(i))
 
     def test_durations(self):
-        durations = list(self.composite_curve.durations())
+        durations = list(self.composite_curve.durations)
         self.assertEqual(durations, [1] * self.n_curves)
 
     def test_concatenate(self):

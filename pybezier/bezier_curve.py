@@ -55,36 +55,27 @@ class BezierCurve(object):
         c = np.array([self._berstein(time, n) for n in range(self.degree + 1)])
         return (self.points.T @ c).T
 
-    def _number_to_curve(self, n : Number) -> "BezierCurve":
-        points = np.array([[n]])
-        return BezierCurve(points, self.initial_time, self.final_time)
-
-    def _array_to_curve(self, x : np.ndarray) -> "BezierCurve":
-        points = np.array([x])
-        return BezierCurve(points, self.initial_time, self.final_time)
-
     def _multiplication(self, curve : Union["BezierCurve", Number], mul_op : Callable) -> "BezierCurve":
         """See (44) in Algorithms for polynomials in Bernstein form, by Farouky
         and Rajan"""
-        if isinstance(curve, Number):
-            curve = self._number_to_curve(curve)
-        if isinstance(curve, np.ndarray):
-            curve = self._array_to_curve(curve)
-        self._assert_same_times(curve)
-        degree = self.degree + curve.degree
-        # select shape and dtype automatically
-        example_product = mul_op(self.points[0], curve.points[0])
-        shape = example_product.shape
-        dtype = example_product.dtype
-        points = np.zeros((degree + 1, *shape), dtype=dtype)
-        for i in range(degree + 1):
-            j_min = max(0, i - curve.degree)
-            j_max = min(self.degree, i)
-            for j in range(j_min, j_max + 1):
-                b = binomial(self.degree, j)
-                b *= binomial(curve.degree, i - j)
-                points[i] += mul_op(self.points[j], curve.points[i - j]) * b
-            points[i] /= binomial(degree, i)
+        if isinstance(curve, Number) or isinstance(curve, np.ndarray):
+            points = self.points * curve
+        else:
+            self._assert_same_times(curve)
+            degree = self.degree + curve.degree
+            # select shape and dtype automatically
+            example_product = mul_op(self.points[0], curve.points[0])
+            shape = example_product.shape
+            dtype = example_product.dtype
+            points = np.zeros((degree + 1, *shape), dtype=dtype)
+            for i in range(degree + 1):
+                j_min = max(0, i - curve.degree)
+                j_max = min(self.degree, i)
+                for j in range(j_min, j_max + 1):
+                    b = binomial(self.degree, j)
+                    b *= binomial(curve.degree, i - j)
+                    points[i] += mul_op(self.points[j], curve.points[i - j]) * b
+                points[i] /= binomial(degree, i)
         return BezierCurve(points, self.initial_time, self.final_time)
 
     def __mul__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
@@ -97,20 +88,22 @@ class BezierCurve(object):
         self.points = (self * curve).points
         return self
 
+    def  __neg__(self) -> "BezierCurve":
+        return self * (-1)
+
     def __matmul__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
         return self._multiplication(curve, operator.matmul)
     
     def __add__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
-        if isinstance(curve, Number):
-            curve = self._number_to_curve(curve)
-        if isinstance(curve, np.ndarray):
-            curve = self._array_to_curve(curve)
-        self._assert_same_times(curve)
-        if curve.degree > self.degree:
-            self = self.elevate_degree(curve.degree)
-        elif self.degree > curve.degree:
-            curve = curve.elevate_degree(self.degree)
-        points = self.points + curve.points
+        if isinstance(curve, Number) or isinstance(curve, np.ndarray):
+            points = self.points + curve
+        else:
+            self._assert_same_times(curve)
+            if curve.degree > self.degree:
+                self = self.elevate_degree(curve.degree)
+            elif self.degree > curve.degree:
+                curve = curve.elevate_degree(self.degree)
+            points = self.points + curve.points
         return BezierCurve(points, self.initial_time, self.final_time)
     
     def __radd__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
@@ -121,17 +114,14 @@ class BezierCurve(object):
         return self
     
     def __sub__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
-        return self + curve * (-1)
+        return self + (- curve)
     
     def __rsub__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
-        return self * (-1) + curve
+        return (- self) + curve
 
     def __isub__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
-        self.points = (self - curve).points
+        self += (- curve)
         return self
-    
-    def  __neg__(self) -> "BezierCurve":
-        return 0 - self
 
     def elevate_degree(self, degree : int) -> "BezierCurve":
         points = np.ones((degree - self.degree + 1, 1))

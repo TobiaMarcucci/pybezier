@@ -15,11 +15,45 @@ class CompositeBezierCurve(object):
         if len(set(shapes)) != 1:
             raise ValueError("All the curves must have the same shape.")
         self.curves = curves
-        self.shape = curves[0].shape
-        self.initial_time = curves[0].initial_time
-        self.final_time = curves[-1].final_time
-        self.duration = self.final_time - self.initial_time
-        self.transition_times = [self.initial_time] + [curve.final_time for curve in curves]
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        return self.curves[0].shape
+
+    @property
+    def initial_time(self) -> float:
+        return self.curves[0].initial_time
+
+    @property
+    def final_time(self) -> float:
+        return self.curves[-1].final_time
+
+    @property
+    def duration(self) -> float:
+        return self.final_time - self.initial_time
+
+    @property
+    def durations(self) -> np.ndarray:
+        return np.array([curve.duration for curve in self])
+
+    @property
+    def transition_times(self) -> float:
+        return [self.initial_time] + [curve.final_time for curve in self.curves]
+
+    @property
+    def initial_point(self) -> np.ndarray:
+        return self[0].initial_point
+
+    @property
+    def final_point(self) -> np.ndarray:
+        return self[-1].final_point
+
+    @property
+    def transition_points(self) -> np.ndarray:
+        # assumes that the curve is continuous
+        points = [curve.initial_point for curve in self]
+        points.append(self.final_point)
+        return np.array(points)
 
     def curve_segment(self, time : float) -> int:
         segment = 0
@@ -31,14 +65,6 @@ class CompositeBezierCurve(object):
         segment = self.curve_segment(time)
         return self[segment](time)
 
-    @property
-    def initial_point(self) -> np.ndarray:
-        return self[0].initial_point
-
-    @property
-    def final_point(self) -> np.ndarray:
-        return self[-1].final_point
-
     def __iter__(self) -> Iterable[BezierCurve]:
         return iter(self.curves)
 
@@ -48,55 +74,67 @@ class CompositeBezierCurve(object):
     def __len__(self) -> int:
         return(len(self.curves))
     
-    def __mul__(self, composite_curve : Union["CompositeBezierCurve", Number]) -> "CompositeBezierCurve":
-        if isinstance(composite_curve, Number):
-            composite_curve = self._number_to_composite_curve(composite_curve)
-        curves = [curve_1 * curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
+    def __mul__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        if isinstance(composite_curve, Number) or isinstance(composite_curve, np.ndarray):
+            curves = [curve * composite_curve for curve in self]
+        else:
+            curves = [curve_1 * curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
         return CompositeBezierCurve(curves)
 
-    def _number_to_composite_curve(self, n : Number) -> "CompositeBezierCurve":
-        curves = [curve._number_to_curve(n) for curve in self]
-        return CompositeBezierCurve(curves)
-
-    def _array_to_composite_curve(self, x : np.ndarray) -> "CompositeBezierCurve":
-        curves = [curve._array_to_curve(x) for curve in self]
-        return CompositeBezierCurve(curves)
-
-    def __rmul__(self, composite_curve : Union["CompositeBezierCurve", Number]) -> "CompositeBezierCurve":
+    def __rmul__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
         return self * composite_curve
+
+    def __imul__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        if isinstance(composite_curve, Number) or isinstance(composite_curve, np.ndarray):
+            for curve in self:
+                curve *= composite_curve
+        else:
+            for curve_1, curve_2 in zip(self, composite_curve):
+                curve_1 *= curve_2
+        return self
+
+    def  __neg__(self) -> "CompositeBezierCurve":
+        return self * (-1)
+
+    def __matmul__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        if isinstance(composite_curve, Number) or isinstance(composite_curve, np.ndarray):
+            curves = [curve * composite_curve for curve in self]
+        else:
+            curves = [curve_1 * curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
+        return CompositeBezierCurve(curves)
+
+    def __add__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        if isinstance(composite_curve, Number) or isinstance(composite_curve, np.ndarray):
+            curves = [curve + composite_curve for curve in self]
+        else:
+            curves = [curve_1 + curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
+        return CompositeBezierCurve(curves)
     
+    def __radd__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        return self + composite_curve
+
+    def __iadd__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        if isinstance(composite_curve, Number) or isinstance(composite_curve, np.ndarray):
+            for curve in self:
+                curve += composite_curve
+        else:
+            for curve_1, curve_2 in zip(self, composite_curve):
+                curve_1 += curve_2
+        return self
+    
+    def __sub__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        return self + (- composite_curve)
+    
+    def __rsub__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        return (- self) + composite_curve
+
+    def __isub__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
+        self += (- composite_curve)
+        return self
+
     def elevate_degree(self, degree : int) -> "CompositeBezierCurve":
         curves = [curve.elevate_degree(degree) for curve in self]
         return CompositeBezierCurve(curves)
-
-    def __add__(self, composite_curve : Union["CompositeBezierCurve", Number]) -> "CompositeBezierCurve":
-        if isinstance(composite_curve, Number):
-            composite_curve = self._number_to_composite_curve(composite_curve)
-        if isinstance(composite_curve, np.ndarray):
-            composite_curve = self._array_to_composite_curve(composite_curve)
-        curves = [curve_1 + curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
-        return CompositeBezierCurve(curves)
-    
-    def __radd__(self, composite_curve : Union["CompositeBezierCurve", Number]) -> "CompositeBezierCurve":
-        return self + composite_curve
-    
-    def __sub__(self, composite_curve : Union["CompositeBezierCurve", Number]) -> "CompositeBezierCurve":
-        return self + composite_curve * (-1)
-    
-    def __rsub__(self, composite_curve : Union["CompositeBezierCurve", Number]) -> "CompositeBezierCurve":
-        return self * (-1) + composite_curve
-    
-    def  __neg__(self) -> "CompositeBezierCurve":
-        return 0 - self
-
-    def transition_points(self) -> np.ndarray:
-        # assumes that the curve is continuous
-        points = [curve.initial_point for curve in self]
-        points.append(self.final_point)
-        return np.array(points)
-
-    def durations(self) -> np.ndarray:
-        return np.array([curve.duration for curve in self])
 
     def concatenate(self, composite_curve : "CompositeBezierCurve") -> "CompositeBezierCurve":
         t = self.final_time - composite_curve.initial_time
