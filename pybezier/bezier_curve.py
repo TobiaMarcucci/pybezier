@@ -140,7 +140,7 @@ class BezierCurve(object):
             points += initial_condition
         return BezierCurve(points, self.initial_time, self.final_time)
     
-    def domain_split(self, time : float) -> tuple["BezierCurve", "BezierCurve"]:
+    def split_domain(self, time : float) -> tuple["BezierCurve", "BezierCurve"]:
         if time < self.initial_time:
             raise ValueError("Split time must be greater than or equal to initial time.")
         elif time == self.initial_time:

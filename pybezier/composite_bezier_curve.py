@@ -17,8 +17,16 @@ class CompositeBezierCurve(object):
         self.curves = curves
 
     @property
+    def degrees(self) -> list[int, ...]:
+        return [curve.degree for curve in self]
+
+    @property
     def shape(self) -> tuple[int, ...]:
         return self.curves[0].shape
+
+    @property
+    def size(self) -> int:
+        return self.curves[0].size
 
     @property
     def initial_time(self) -> float:
@@ -29,16 +37,16 @@ class CompositeBezierCurve(object):
         return self.curves[-1].final_time
 
     @property
+    def transition_times(self) -> list[int, ...]:
+        return [self.initial_time] + [curve.final_time for curve in self.curves]
+
+    @property
     def duration(self) -> float:
         return self.final_time - self.initial_time
 
     @property
     def durations(self) -> np.ndarray:
-        return np.array([curve.duration for curve in self])
-
-    @property
-    def transition_times(self) -> float:
-        return [self.initial_time] + [curve.final_time for curve in self.curves]
+        return [curve.duration for curve in self]
 
     @property
     def initial_point(self) -> np.ndarray:
@@ -55,14 +63,14 @@ class CompositeBezierCurve(object):
         points.append(self.final_point)
         return np.array(points)
 
-    def curve_segment(self, time : float) -> int:
+    def segment_index(self, time : float) -> int:
         segment = 0
         while self[segment].final_time < time:
             segment += 1
         return segment
 
     def __call__(self, time : float) -> np.ndarray:
-        segment = self.curve_segment(time)
+        segment = self.segment_index(time)
         return self[segment](time)
 
     def __iter__(self) -> Iterable[BezierCurve]:
@@ -141,7 +149,7 @@ class CompositeBezierCurve(object):
         shifted_curves = composite_curve.time_shift(t).curves
         return CompositeBezierCurve(self.curves + shifted_curves)
 
-    def domain_split(self, time : float) -> Tuple["CompositeBezierCurve", "CompositeBezierCurve"]:
+    def split_domain(self, time : float) -> Tuple["CompositeBezierCurve", "CompositeBezierCurve"]:
         if time < self.initial_time:
             raise ValueError("Split time must be greater than or equal to initial time.")
         elif time == self.initial_time:
@@ -150,10 +158,10 @@ class CompositeBezierCurve(object):
             raise ValueError("Split time must be lower than or equal to final time.")
         elif time == self.final_time:
             return self, None
-        segment = self.curve_segment(time)
+        segment = self.segment_index(time)
         curves1 = self[:segment]
         curves2 = self[segment+1:]
-        curve1, curve2 = self[segment].domain_split(time)
+        curve1, curve2 = self[segment].split_domain(time)
         if curve1 is not None:
             curves1.append(curve1)
         if curve2 is not None:

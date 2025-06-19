@@ -128,17 +128,17 @@ class TestBezierCurve(unittest.TestCase):
                 target_value = (integral(time + time_step) - integral(time)) / time_step
                 np.testing.assert_array_almost_equal(value, target_value)
 
-    def test_domain_split(self):
+    def test_split_domain(self):
 
         # split at initial time
-        curve_1, curve_2 = self.curve.domain_split(self.initial_time)
+        curve_1, curve_2 = self.curve.split_domain(self.initial_time)
         self.assertTrue(curve_1 is None)
         np.testing.assert_array_equal(self.curve.points, curve_2.points)
         self.assertEqual(self.initial_time, curve_2.initial_time)
         self.assertEqual(self.final_time, curve_2.final_time)
 
         # split at final time
-        curve_1, curve_2 = self.curve.domain_split(self.final_time)
+        curve_1, curve_2 = self.curve.split_domain(self.final_time)
         self.assertTrue(curve_2 is None)
         np.testing.assert_array_equal(self.curve.points, curve_1.points)
         self.assertEqual(self.initial_time, curve_1.initial_time)
@@ -146,7 +146,7 @@ class TestBezierCurve(unittest.TestCase):
 
         # split at internal time
         split_time = (self.initial_time + self.final_time) / 2
-        curve_1, curve_2 = self.curve.domain_split(split_time)
+        curve_1, curve_2 = self.curve.split_domain(split_time)
         for time in self.time_samples:
             if time < split_time:
                 np.testing.assert_array_almost_equal(self.curve(time), curve_1(time))
@@ -155,9 +155,9 @@ class TestBezierCurve(unittest.TestCase):
 
         # split outside domain
         with self.assertRaises(ValueError):
-            self.assertRaises(self.curve.domain_split(self.initial_time - .1))
+            self.assertRaises(self.curve.split_domain(self.initial_time - .1))
         with self.assertRaises(ValueError):
-            self.assertRaises(self.curve.domain_split(self.final_time + .1))
+            self.assertRaises(self.curve.split_domain(self.final_time + .1))
 
     def test_time_shift(self):
         t = .33
