@@ -25,8 +25,8 @@ class CompositeBezierCurve(object):
         return self.curves[0].shape
 
     @property
-    def size(self) -> int:
-        return self.curves[0].size
+    def dimension(self) -> int:
+        return self.curves[0].dimension
 
     @property
     def initial_time(self) -> float:

@@ -22,7 +22,7 @@ class BezierCurve(object):
         return self.points[0].shape
 
     @property
-    def size(self) -> int:
+    def dimension(self) -> int:
         return self.points[0].size
 
     @property
@@ -132,7 +132,7 @@ class BezierCurve(object):
 
     def integral(self, initial_condition : np.ndarray | None = None) -> "BezierCurve":
         points = self.points * self.duration / (self.degree + 1)
-        points = np.vstack([np.zeros(self.shape), points])
+        points = np.array([np.zeros(self.shape), *points])
         points = np.cumsum(points, axis=0)
         if initial_condition is not None:
             points += initial_condition
@@ -156,8 +156,9 @@ class BezierCurve(object):
             points1[i] = points[0]
             points2[-i-1] = points[-1]
             points = points[1:] * c + points[:-1] * d
-        points1[-1] = points
-        points2[0] = points
+        print(points1, points2, points)
+        points1[-1] = points[0]
+        points2[0] = points[0]
         curve1 = BezierCurve(points1, self.initial_time, time)
         curve2 = BezierCurve(points2, time, self.final_time)
         return curve1, curve2
