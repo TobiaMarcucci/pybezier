@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='pybezier',
-    version='0.1.1',
+    version='0.1.3',
     description='A simple Python package to manipulate Bézier curves',
     url='https://github.com/TobiaMarcucci/pybezier',
     author='Tobia Marcucci',
