@@ -157,7 +157,6 @@ class BezierCurve(object):
             points1[i] = points[0]
             points2[-i-1] = points[-1]
             points = points[1:] * c + points[:-1] * d
-        print(points1, points2, points)
         points1[-1] = points[0]
         points2[0] = points[0]
         curve1 = BezierCurve(points1, self.initial_time, time)
