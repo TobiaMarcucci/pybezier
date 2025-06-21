@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from pybezier.bezier_curve import BezierCurve
+from pybezier.bezier import BezierCurve
 
 class TestBezierCurve(unittest.TestCase):
 
@@ -14,7 +14,7 @@ class TestBezierCurve(unittest.TestCase):
         self.scalar_curve = BezierCurve(self.scalar_points, self.initial_time, self.final_time)
         # vector curve
         np.random.seed(0)
-        self.vec_points = np.random.rand(5, 3)
+        self.vec_points = np.random.rand(7, 2)
         self.vec_curve = BezierCurve(self.vec_points, self.initial_time, self.final_time)
         # matrix curve
         np.random.seed(0)
@@ -83,7 +83,7 @@ class TestBezierCurve(unittest.TestCase):
                 point = points[0] + time * points[-1]
                 np.testing.assert_array_almost_equal(point, curve(time))
 
-    def test_scalar_mul(self):
+    def test_scalar_mul_and_rmul(self):
         c = 3.66
         for curve in self.curves:
             prod_1 = curve * c
@@ -97,7 +97,10 @@ class TestBezierCurve(unittest.TestCase):
         for curve in self.curves:
             prod = curve * curve
             for time in self.time_samples:
-                np.testing.assert_array_almost_equal(prod(time), curve(time) * curve(time))
+                value = curve(time) * curve(time)
+                np.testing.assert_array_almost_equal(prod(time), value)
+        with self.assertRaises(ValueError):
+            self.mat_curve * self.vec_curve
 
     def test_imul(self):
         c = 3.66
@@ -111,12 +114,10 @@ class TestBezierCurve(unittest.TestCase):
         curve_2 = self.vec_curve * self.vec_curve
         for point_1, point_2 in zip(curve_1.points, curve_2.points):
             np.testing.assert_array_almost_equal(point_1, sum(point_2))
-
-    def test_elevate_degree(self):
-        for curve_1 in self.curves:
-            curve_2 = curve_1.elevate_degree(11)
-            for time in self.time_samples:
-                np.testing.assert_array_almost_equal(curve_1(time), curve_2(time))
+        with self.assertRaises(TypeError):
+            self.scalar_curve @ self.scalar_curve
+        with self.assertRaises(ValueError):
+            self.mat_curve @ self.vec_curve
 
     def test_scalar_add_sub(self):
         c = 3.66
@@ -139,11 +140,27 @@ class TestBezierCurve(unittest.TestCase):
                 np.testing.assert_array_almost_equal(sum(time), 2 * curve(time))
                 np.testing.assert_array_almost_equal(sub(time), 0)
 
+    def test_iadd_and_isub(self):
+        for points, curve in zip(self.points, self.curves):
+            curve_2 = BezierCurve(points, self.initial_time, self.final_time)
+            curve_2 += curve
+            for time in self.time_samples:
+                np.testing.assert_array_almost_equal(curve_2(time), 2 * curve(time))
+            curve_2 -= curve
+            for time in self.time_samples:
+                np.testing.assert_array_almost_equal(curve_2(time), curve(time))
+
     def test_neg(self):
         for curve in self.curves:
             neg = - curve
             for time in self.time_samples:
                 np.testing.assert_array_almost_equal(neg(time), -curve(time))
+
+    def test_elevate_degree(self):
+        for curve_1 in self.curves:
+            curve_2 = curve_1.elevate_degree(11)
+            for time in self.time_samples:
+                np.testing.assert_array_almost_equal(curve_1(time), curve_2(time))
 
     def test_derivative(self):
         time_step = 1e-6
@@ -196,28 +213,28 @@ class TestBezierCurve(unittest.TestCase):
 
             # split outside domain
             with self.assertRaises(ValueError):
-                self.assertRaises(curve.split_domain(self.initial_time - .1))
+                curve.split_domain(self.initial_time - .1)
             with self.assertRaises(ValueError):
-                self.assertRaises(curve.split_domain(self.final_time + .1))
+                curve.split_domain(self.final_time + .1)
 
-    def test_time_shift(self):
+    def test_shift_domain(self):
         t = .33
         for curve in self.curves:
-            shifted_curve = curve.time_shift(t)
+            shifted_curve = curve.shift_domain(t)
             np.testing.assert_array_equal(curve.points, shifted_curve.points)
             self.assertEqual(self.initial_time + t, shifted_curve.initial_time)
             self.assertEqual(self.final_time + t, shifted_curve.final_time)
 
-    def test_l2_squared(self):
+    def test_squared_l2_norm(self):
         n_samples = 1000
         times = np.linspace(self.initial_time, self.final_time, n_samples)
         values = [np.linalg.norm(self.vec_curve(time)) ** 2 for time in times]
         integral = np.trapz(values, times)
-        self.assertAlmostEqual(self.vec_curve.l2_squared(), integral, places=4)
+        self.assertAlmostEqual(self.vec_curve.squared_l2_norm(), integral, places=4)
 
     def test_integral_of_convex_function(self):
         f = lambda point: point.dot(point)
-        value = self.vec_curve.l2_squared()
+        value = self.vec_curve.squared_l2_norm()
         upper_bound = self.vec_curve.integral_of_convex_function(f)
         self.assertTrue(value <= upper_bound)
         # upper bound for curve lenght is equal to distance of control points

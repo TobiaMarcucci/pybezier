@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple, Callable, Union, Optional
 from collections.abc import Iterable
 from numbers import Number
-from pybezier.bezier_curve import BezierCurve
+from pybezier.bezier import BezierCurve
 
 class CompositeBezierCurve(object):
 
@@ -146,7 +146,7 @@ class CompositeBezierCurve(object):
 
     def concatenate(self, composite_curve : "CompositeBezierCurve") -> "CompositeBezierCurve":
         t = self.final_time - composite_curve.initial_time
-        shifted_curves = composite_curve.time_shift(t).curves
+        shifted_curves = composite_curve.shift_domain(t).curves
         return CompositeBezierCurve(self.curves + shifted_curves)
 
     def split_domain(self, time : float) -> Tuple["CompositeBezierCurve", "CompositeBezierCurve"]:
@@ -168,10 +168,10 @@ class CompositeBezierCurve(object):
             curves2.insert(0, curve2)
         return CompositeBezierCurve(curves1), CompositeBezierCurve(curves2)
 
-    def time_shift(self, t : float) -> "CompositeBezierCurve":
+    def shift_domain(self, t : float) -> "CompositeBezierCurve":
         curves = []
         for curve in self:
-            curves.append(curve.time_shift(t))
+            curves.append(curve.shift_domain(t))
         return CompositeBezierCurve(curves)
 
     def derivative(self) -> "CompositeBezierCurve":
@@ -184,8 +184,8 @@ class CompositeBezierCurve(object):
             initial_condition = curves[-1].final_point
         return CompositeBezierCurve(curves)
     
-    def l2_squared(self) -> float:
-        return sum(curve.l2_squared() for curve in self)
+    def squared_l2_norm(self) -> float:
+        return sum(curve.squared_l2_norm() for curve in self)
 
     def integral_of_convex_function(self, f : Callable) -> float:
         return sum(curve.integral_of_convex_function(f) for curve in self)

@@ -1,6 +1,6 @@
 import numpy as np
 import operator
-from typing import List, Callable, Union
+from typing import Callable, Union
 from numbers import Number
 from pybezier.binomial import binomial
 
@@ -86,9 +86,6 @@ class BezierCurve(object):
         self.points = (self * curve).points
         return self
 
-    def  __neg__(self) -> "BezierCurve":
-        return self * (-1)
-
     def __matmul__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
         return self._multiplication(curve, operator.matmul)
     
@@ -111,6 +108,9 @@ class BezierCurve(object):
         self.points = (self + curve).points
         return self
     
+    def  __neg__(self) -> "BezierCurve":
+        return self * (-1)
+    
     def __sub__(self, curve : Union["BezierCurve", Number, np.ndarray]) -> "BezierCurve":
         return self + (- curve)
     
@@ -130,7 +130,7 @@ class BezierCurve(object):
         points = (self.points[1:] - self.points[:-1]) * (self.degree / self.duration)
         return BezierCurve(points, self.initial_time, self.final_time)
 
-    def integral(self, initial_condition : np.ndarray | None = None) -> "BezierCurve":
+    def integral(self, initial_condition : Union[np.ndarray, None] = None) -> "BezierCurve":
         points = self.points * self.duration / (self.degree + 1)
         points = np.array([np.zeros(self.shape), *points])
         points = np.cumsum(points, axis=0)
@@ -138,7 +138,8 @@ class BezierCurve(object):
             points += initial_condition
         return BezierCurve(points, self.initial_time, self.final_time)
     
-    def split_domain(self, time : float) -> tuple["BezierCurve", "BezierCurve"]:
+    def split_domain(self, time : float) -> tuple[Union["BezierCurve", None], Union["BezierCurve", None]]:
+        # TODO: raise error also if time is equal to initial or final time
         if time < self.initial_time:
             raise ValueError("Split time must be greater than or equal to initial time.")
         elif time == self.initial_time:
@@ -163,12 +164,12 @@ class BezierCurve(object):
         curve2 = BezierCurve(points2, time, self.final_time)
         return curve1, curve2
 
-    def time_shift(self, t : float) -> "BezierCurve":
+    def shift_domain(self, t : float) -> "BezierCurve":
         initial_time = self.initial_time + t
         final_time = self.final_time + t
         return BezierCurve(self.points, initial_time, final_time)
     
-    def l2_squared(self) -> float:
+    def squared_l2_norm(self) -> float:
         """See (34) in Algorithms for polynomials in Bernstein form, by Farouky
         and Rajan"""
         a = 0

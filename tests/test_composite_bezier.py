@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
-from pybezier.bezier_curve import BezierCurve
-from pybezier.composite_bezier_curve import CompositeBezierCurve
+from pybezier.bezier import BezierCurve
+from pybezier.composite_bezier import CompositeBezierCurve
 
 class TestCompositeBezierCurve(unittest.TestCase):
 
@@ -182,9 +182,9 @@ class TestCompositeBezierCurve(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.assertRaises(self.composite_curve.split_domain(self.final_time + .1))
 
-    def test_time_shift(self):
+    def test_shift_domain(self):
         t = .234
-        shifted_composite_curve = self.composite_curve.time_shift(t)
+        shifted_composite_curve = self.composite_curve.shift_domain(t)
         self.assertEqual(len(shifted_composite_curve), len(self.composite_curve))
         for curve, shifted_curve in zip(self.composite_curve, shifted_composite_curve):
             np.testing.assert_array_equal(curve.points, shifted_curve.points)
@@ -209,17 +209,17 @@ class TestCompositeBezierCurve(unittest.TestCase):
                 value = self.composite_curve_2(time - self.final_time)
                 np.testing.assert_array_almost_equal(conc(time), value)    
                 
-    def test_l2_squared(self):
+    def test_squared_l2_norm(self):
         n_samples = 5000
         times = np.linspace(self.initial_time, self.final_time, n_samples)
         squared_norm = lambda time: np.linalg.norm(self.composite_curve(time)) ** 2
         values = [squared_norm(time) for time in times]
         integral = np.trapz(values, times)
-        self.assertAlmostEqual(self.composite_curve.l2_squared(), integral, places=4)
+        self.assertAlmostEqual(self.composite_curve.squared_l2_norm(), integral, places=4)
 
     def test_integral_of_convex_function(self):
         f = lambda point: point.dot(point)
-        value = self.composite_curve.l2_squared()
+        value = self.composite_curve.squared_l2_norm()
         upper_bound = self.composite_curve.integral_of_convex_function(f)
         self.assertTrue(value <= upper_bound)
         # upper bound for curve lenght is equal to distance of control points
