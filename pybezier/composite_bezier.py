@@ -37,8 +37,10 @@ class CompositeBezierCurve(object):
         return self.curves[-1].final_time
 
     @property
-    def transition_times(self) -> list[int, ...]:
-        return [self.initial_time] + [curve.final_time for curve in self.curves]
+    def transition_times(self) -> np.array:
+        times = [curve.initial_time for curve in self]
+        times.append(self.final_time)
+        return np.array(times)
 
     @property
     def duration(self) -> float:
@@ -101,14 +103,11 @@ class CompositeBezierCurve(object):
                 curve_1 *= curve_2
         return self
 
-    def  __neg__(self) -> "CompositeBezierCurve":
-        return self * (-1)
-
     def __matmul__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
         if isinstance(composite_curve, Number) or isinstance(composite_curve, np.ndarray):
-            curves = [curve * composite_curve for curve in self]
+            curves = [curve @ composite_curve for curve in self]
         else:
-            curves = [curve_1 * curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
+            curves = [curve_1 @ curve_2 for curve_1, curve_2 in zip(self, composite_curve)]
         return CompositeBezierCurve(curves)
 
     def __add__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
@@ -129,6 +128,9 @@ class CompositeBezierCurve(object):
             for curve_1, curve_2 in zip(self, composite_curve):
                 curve_1 += curve_2
         return self
+    
+    def  __neg__(self) -> "CompositeBezierCurve":
+        return self * (-1)
     
     def __sub__(self, composite_curve : Union["CompositeBezierCurve", Number, np.ndarray]) -> "CompositeBezierCurve":
         return self + (- composite_curve)
